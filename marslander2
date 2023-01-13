@@ -1,0 +1,139 @@
+import java.util.Scanner;
+
+class Player {
+
+    static double gravity = 3.711;
+    static int Power;
+    static int eps = 5;
+    static int Safe_dist = 20; //Безопасная дистанция для посадки
+    static int vertical_speed = 40; //максимальная допустимая вертикальная скорость из условия
+    static int horizont_speed = 20; //максимальная допустимая горизонтальная скорость из условия
+
+    public static boolean speedLimits(int marsLanderHorizontalSpeed, int marsLanderVerticalSpeed) { //определяем ограничение скорости
+        return Math.abs(marsLanderHorizontalSpeed) <= (horizont_speed - eps) && Math.abs(marsLanderVerticalSpeed) <= (vertical_speed - eps);
+    }
+    
+    public static boolean WrongDirection(int marsLanderX, int marsLanderHorizontalSpeed, int point_X1, int point_X2) { //проверяем направление полета
+
+        if (marsLanderX < point_X1 && marsLanderHorizontalSpeed < 0) {
+            return true;
+        }
+
+        if (marsLanderX > point_X2 && marsLanderHorizontalSpeed > 0) {
+            return true;
+        }
+
+        return false;
+        }
+        
+    public static boolean flyinzone(int marsLanderX, int point_X1, int point_X2) { //определяет, что Marslander в зоне посадки
+        return marsLanderX >= point_X1 && marsLanderX <= point_X2;
+    }
+
+    public static boolean landing(int marsLanderY, int point_Y) { //совершает посадку
+        return marsLanderY < point_Y + Safe_dist;
+    }
+ 
+    public static int slowDown(int horizontalSpeed, int verticalSpeed) { //корректирует скорость посадки
+        double speed = Math.sqrt(Math.pow(horizontalSpeed, 2) + Math.pow(verticalSpeed, 2));
+        double rotationAsRadians = Math.asin((double) horizontalSpeed / speed);
+        return (int) Math.toDegrees(rotationAsRadians);
+    }
+
+
+    public static boolean tooFastSpeed(int marsLanderHorizontalSpeed) { //корректировка скорости
+        return Math.abs(marsLanderHorizontalSpeed) > (horizont_speed * 4);
+        }
+
+    public static boolean tooLowSpeed(int marsLanderHorizontalSpeed) { //корректировка скорости
+        return Math.abs(marsLanderHorizontalSpeed) < (horizont_speed * 2);
+        }
+
+    public static int speedUp(int marsLanderX, int point_X1, int point_X2) { //корректировка ускорения
+
+        if (marsLanderX < point_X1) {
+            return - (int) Math.toDegrees(Math.acos(gravity / 4.0));
+        }
+
+        if (marsLanderX > point_X2) {
+            return + (int) Math.toDegrees(Math.acos(gravity / 4.0));
+        }
+
+        return 0;
+        }
+
+    public static int powerFlying(int marsLanderVerticalSpeed) { //установка мощности для посадки
+        return (marsLanderVerticalSpeed >= 0) ? 3 : 4;
+    }
+
+
+    public static void main(String args[]) {
+
+        Scanner in = new Scanner(System.in); //ввод значений
+        int N = in.nextInt(); // кол-во точек для кривой
+        //положение по х и у
+        int point_X1 = 0;// Левая граница зоны
+        int point_X2 = 0;// Правая граница зоны
+        int point_Y = 0;// Граница по ОУ
+
+
+        int pred_X = 0; //предыдущее значение Х
+        int pred_Y = 0; //предыдущее значение У
+        //перебор чисел чтобы определить поверхность Марса 
+        for (int i = 0; i < N; i++) {
+            int landX = in.nextInt();
+            int landY = in.nextInt();
+            if (pred_Y == landY) {
+                point_X1 = pred_X;
+                point_X2 = landX;
+                point_Y = landY;
+            } else {
+                pred_X = landX;
+                pred_Y = landY;
+            }
+        }
+
+    while (true) {
+
+        int X = in.nextInt();
+        int Y = in.nextInt();
+        int HSpeed = in.nextInt();
+        int VSpeed = in.nextInt();
+        int Fuel = in.nextInt();
+        int Rotate = in.nextInt();
+        int Power = in.nextInt();
+
+        if (flyinzone(X, point_X1, point_X2)) { //условие посадки
+
+            if (landing(Y, point_Y)) {
+                Rotate = 0;
+                Power = 3;
+            } else if (speedLimits(HSpeed, VSpeed)) {
+                Rotate = 0;
+                Power = 2;
+            } else {
+                Rotate = slowDown(HSpeed, VSpeed);
+                Power = 4;
+            }
+
+        } else { //корректировка направления
+
+            if (WrongDirection(X, HSpeed, point_X1, point_X2) || tooFastSpeed(HSpeed)) {
+                Rotate = slowDown(HSpeed, VSpeed);
+                Power = 4;
+            } else if (tooLowSpeed(HSpeed)) {
+                Rotate = speedUp(X, point_X1, point_X2);
+                Power = 4;
+            } else {
+                Rotate = 0;
+                Power = powerFlying(VSpeed);
+            }
+
+        }
+
+        System.out.println(Rotate + " " + Power);
+        }
+
+    }
+
+}
